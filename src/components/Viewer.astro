@@ -1,0 +1,351 @@
+---
+interface Props {
+  url?: string;
+}
+const { url = '' } = Astro.props;
+const hasUrl = url.trim().length > 0;
+---
+
+<main class="viewer-shell">
+  <div class="viewport-info">
+    <span id="viewport-label" class="viewport-label">Desktop</span>
+    <span id="viewport-size" class="viewport-size">Full width</span>
+  </div>
+
+  <div class="viewer-stage">
+    <div id="device-frame" class="device-frame device-frame--desktop">
+      <div class="device-chrome">
+        <div class="device-chrome__dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div id="device-url-bar" class="device-chrome__url">
+          {hasUrl ? url : 'about:blank'}
+        </div>
+      </div>
+      <div class="iframe-wrapper">
+        {hasUrl ? (
+          <iframe
+            id="preview-frame"
+            class="preview-frame"
+            src={url}
+            title="Preview"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        ) : (
+          <div id="empty-state" class="empty-state">
+            <div class="empty-state__icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <h2 class="empty-state__title">No URL to preview</h2>
+            <p class="empty-state__desc">Paste a URL in the address bar above and press Enter to begin.</p>
+            <div class="empty-state__examples">
+              <span class="empty-state__examples-label">Try an example:</span>
+              <button class="example-url" data-url="https://example.com">example.com</button>
+              <button class="example-url" data-url="https://wikipedia.org">wikipedia.org</button>
+            </div>
+          </div>
+        )}
+        <div id="loading-overlay" class="loading-overlay" style="display:none">
+          <div class="loading-spinner"></div>
+        </div>
+        <div id="error-state" class="error-state" style="display:none">
+          <div class="error-state__icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <h3 class="error-state__title">Cannot load this page</h3>
+          <p class="error-state__desc">The page may have blocked embedding via X-Frame-Options or CSP headers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<style>
+  .viewer-shell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--color-bg);
+    position: relative;
+  }
+
+  .viewport-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px 0;
+    flex-shrink: 0;
+  }
+
+  .viewport-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-cyan);
+  }
+
+  .viewport-size {
+    font-size: 11px;
+    color: var(--color-text-dim);
+    font-family: 'SF Mono', ui-monospace, monospace;
+  }
+
+  .viewer-stage {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px 24px 24px;
+    overflow: auto;
+    min-height: 0;
+  }
+
+  .device-frame {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.04),
+      0 8px 32px rgba(0,0,0,0.6),
+      0 2px 8px rgba(0,0,0,0.4);
+    transition: width var(--transition), height var(--transition), max-height var(--transition);
+    position: relative;
+  }
+
+  .device-frame--desktop {
+    width: 100%;
+    height: calc(100vh - var(--navbar-h) - 72px);
+    max-height: none;
+  }
+
+  .device-frame--tablet {
+    width: 768px;
+    height: 1024px;
+    max-height: calc(100vh - var(--navbar-h) - 80px);
+  }
+
+  .device-frame--mobile {
+    width: 375px;
+    height: 667px;
+    max-height: calc(100vh - var(--navbar-h) - 80px);
+  }
+
+  .device-chrome {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    height: 36px;
+    background: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .device-chrome__dots {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .device-chrome__dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-border-hover);
+    display: block;
+  }
+
+  .device-chrome__dots span:nth-child(1) { background: #ff5f57; }
+  .device-chrome__dots span:nth-child(2) { background: #febc2e; }
+  .device-chrome__dots span:nth-child(3) { background: #28c840; }
+
+  .device-chrome__url {
+    flex: 1;
+    min-width: 0;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .iframe-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .preview-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #ffffff;
+  }
+
+  /* Empty State */
+  .empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    background: var(--color-bg);
+  }
+
+  .empty-state__icon {
+    color: var(--color-text-dim);
+    margin-bottom: 8px;
+  }
+
+  .empty-state__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+  }
+
+  .empty-state__desc {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    text-align: center;
+    max-width: 360px;
+    line-height: 1.6;
+  }
+
+  .empty-state__examples {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .empty-state__examples-label {
+    font-size: 12px;
+    color: var(--color-text-dim);
+  }
+
+  .example-url {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-cyan);
+    font-size: 12px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition);
+  }
+
+  .example-url:hover {
+    background: var(--color-cyan-dim);
+    border-color: var(--color-cyan);
+  }
+
+  /* Loading Overlay */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Error State */
+  .error-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    background: var(--color-bg);
+  }
+
+  .error-state__icon {
+    color: #ff5f57;
+  }
+
+  .error-state__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+  }
+
+  .error-state__desc {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    text-align: center;
+    max-width: 340px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 768px) {
+    .viewer-stage {
+      padding: 12px;
+    }
+
+    .device-frame--tablet {
+      width: 100%;
+      max-height: calc(100vh - var(--navbar-h) - 60px);
+    }
+
+    .device-frame--mobile {
+      max-height: calc(100vh - var(--navbar-h) - 60px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .viewport-info {
+      padding: 6px 12px 0;
+    }
+
+    .viewer-stage {
+      padding: 8px;
+    }
+
+    .device-frame--mobile {
+      width: 100%;
+    }
+  }
+</style>

@@ -1,0 +1,174 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Toolbar from '../components/Toolbar.astro';
+import Viewer from '../components/Viewer.astro';
+
+const rawUrl = Astro.url.searchParams.get('url') ?? '';
+const initialUrl = rawUrl.trim();
+---
+
+<Layout title="Responsive Preview">
+  <Toolbar initialUrl={initialUrl} />
+  <Viewer url={initialUrl} />
+</Layout>
+
+<script>
+  type Device = 'mobile' | 'tablet' | 'desktop';
+
+  const DEVICES: Record<Device, { label: string; size: string; frameClass: string }> = {
+    mobile:  { label: 'Mobile',  size: '375 × 667',  frameClass: 'device-frame--mobile'  },
+    tablet:  { label: 'Tablet',  size: '768 × 1024', frameClass: 'device-frame--tablet'  },
+    desktop: { label: 'Desktop', size: 'Full width',  frameClass: 'device-frame--desktop' },
+  };
+
+  const urlInput       = document.getElementById('url-input')       as HTMLInputElement;
+  const loadBtn        = document.getElementById('url-load-btn')    as HTMLButtonElement;
+  const deviceFrame    = document.getElementById('device-frame')    as HTMLDivElement;
+  const viewportLabel  = document.getElementById('viewport-label')  as HTMLSpanElement;
+  const viewportSize   = document.getElementById('viewport-size')   as HTMLSpanElement;
+  const deviceUrlBar   = document.getElementById('device-url-bar')  as HTMLDivElement;
+  const deviceBtns     = document.querySelectorAll<HTMLButtonElement>('.device-btn');
+  const loadingOverlay = document.getElementById('loading-overlay') as HTMLDivElement;
+  const errorState     = document.getElementById('error-state')     as HTMLDivElement;
+
+  let currentDevice: Device = 'desktop';
+
+  function getPreviewFrame(): HTMLIFrameElement | null {
+    return document.getElementById('preview-frame') as HTMLIFrameElement | null;
+  }
+
+  function setDevice(device: Device) {
+    currentDevice = device;
+    deviceFrame.classList.remove('device-frame--mobile', 'device-frame--tablet', 'device-frame--desktop');
+    deviceFrame.classList.add(DEVICES[device].frameClass);
+    viewportLabel.textContent = DEVICES[device].label;
+    viewportSize.textContent  = DEVICES[device].size;
+    deviceBtns.forEach(btn => {
+      btn.classList.toggle('device-btn--active', btn.dataset.device === device);
+    });
+  }
+
+  function normalizeUrl(raw: string): string {
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return 'https://' + trimmed;
+  }
+
+  function showEmptyState() {
+    const iframeWrapper = deviceFrame.querySelector('.iframe-wrapper') as HTMLDivElement;
+    const existing = document.getElementById('preview-frame');
+    if (existing) existing.remove();
+    let emptyState = document.getElementById('empty-state');
+    if (!emptyState) {
+      emptyState = document.createElement('div');
+      emptyState.id = 'empty-state';
+      emptyState.className = 'empty-state';
+      emptyState.innerHTML = `
+        <div class="empty-state__icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        <h2 class="empty-state__title">No URL to preview</h2>
+        <p class="empty-state__desc">Paste a URL in the address bar above and press Enter to begin.</p>
+        <div class="empty-state__examples">
+          <span class="empty-state__examples-label">Try an example:</span>
+          <button class="example-url" data-url="https://example.com">example.com</button>
+          <button class="example-url" data-url="https://wikipedia.org">wikipedia.org</button>
+        </div>
+      `;
+      iframeWrapper.appendChild(emptyState);
+      attachExampleListeners(emptyState.querySelectorAll<HTMLButtonElement>('.example-url'));
+    }
+    errorState.style.display = 'none';
+    loadingOverlay.style.display = 'none';
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  function loadUrl(url: string) {
+    if (!url) { showEmptyState(); return; }
+
+    deviceUrlBar.textContent = url;
+    errorState.style.display = 'none';
+    loadingOverlay.style.display = 'flex';
+
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) emptyState.remove();
+
+    let frame = getPreviewFrame();
+    if (!frame) {
+      const iframeWrapper = deviceFrame.querySelector('.iframe-wrapper') as HTMLDivElement;
+      frame = document.createElement('iframe');
+      frame.id = 'preview-frame';
+      frame.className = 'preview-frame';
+      frame.title = 'Preview';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+      iframeWrapper.insertBefore(frame, loadingOverlay);
+    }
+
+    const newSearch = new URLSearchParams({ url });
+    window.history.replaceState({}, '', `${window.location.pathname}?${newSearch.toString()}`);
+
+    const loadTimeout = setTimeout(() => {
+      if (loadingOverlay.style.display !== 'none') {
+        loadingOverlay.style.display = 'none';
+        errorState.style.display = 'flex';
+      }
+    }, 12000);
+
+    frame.onload = () => {
+      clearTimeout(loadTimeout);
+      loadingOverlay.style.display = 'none';
+      errorState.style.display = 'none';
+    };
+
+    frame.src = url;
+  }
+
+  function handleUrlSubmit() {
+    const normalized = normalizeUrl(urlInput.value);
+    if (normalized) {
+      urlInput.value = normalized;
+      loadUrl(normalized);
+    } else {
+      showEmptyState();
+    }
+  }
+
+  function attachExampleListeners(btns: NodeListOf<HTMLButtonElement>) {
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.url ?? '';
+        urlInput.value = url;
+        loadUrl(url);
+      });
+    });
+  }
+
+  deviceBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const device = btn.dataset.device as Device;
+      if (device) setDevice(device);
+    });
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleUrlSubmit();
+  });
+
+  loadBtn.addEventListener('click', handleUrlSubmit);
+
+  // Attach listeners to static SSR example buttons
+  const staticExamples = document.querySelectorAll<HTMLButtonElement>('#empty-state .example-url');
+  attachExampleListeners(staticExamples);
+
+  // Detect initial device based on viewport
+  function detectInitialDevice(): Device {
+    if (window.innerWidth <= 480) return 'mobile';
+    if (window.innerWidth <= 1024) return 'tablet';
+    return 'desktop';
+  }
+
+  setDevice(detectInitialDevice());
+</script>

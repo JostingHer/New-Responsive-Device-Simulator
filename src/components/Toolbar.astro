@@ -1,0 +1,236 @@
+---
+interface Props {
+  initialUrl?: string;
+}
+const { initialUrl = '' } = Astro.props;
+---
+
+<header class="navbar">
+  <div class="navbar__brand">
+    <svg class="navbar__logo" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="7" height="7" rx="1.5" fill="var(--color-cyan)" opacity="0.9"/>
+      <rect x="11" y="2" width="7" height="7" rx="1.5" fill="var(--color-purple)" opacity="0.9"/>
+      <rect x="2" y="11" width="7" height="7" rx="1.5" fill="var(--color-purple)" opacity="0.6"/>
+      <rect x="11" y="11" width="7" height="7" rx="1.5" fill="var(--color-cyan)" opacity="0.6"/>
+    </svg>
+    <span class="navbar__title">Responsive<span class="navbar__title--accent">Preview</span></span>
+  </div>
+
+  <div class="url-bar">
+    <div class="url-bar__icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    </div>
+    <input
+      id="url-input"
+      class="url-bar__input"
+      type="url"
+      placeholder="Enter a URL to preview..."
+      value={initialUrl}
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button id="url-load-btn" class="url-bar__btn" title="Load URL">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="device-switcher" role="group" aria-label="Device preview">
+    <button class="device-btn" data-device="mobile" title="Mobile (375×667)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+        <line x1="12" y1="18" x2="12.01" y2="18"/>
+      </svg>
+      <span>Mobile</span>
+    </button>
+    <button class="device-btn" data-device="tablet" title="Tablet (768×1024)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+        <line x1="12" y1="18" x2="12.01" y2="18"/>
+      </svg>
+      <span>Tablet</span>
+    </button>
+    <button class="device-btn device-btn--active" data-device="desktop" title="Desktop (Full width)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      <span>Desktop</span>
+    </button>
+  </nav>
+</header>
+
+<style>
+  .navbar {
+    height: var(--navbar-h);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .navbar__brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .navbar__logo {
+    display: block;
+  }
+
+  .navbar__title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .navbar__title--accent {
+    color: var(--color-cyan);
+    margin-left: 3px;
+  }
+
+  .url-bar {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color var(--transition);
+    min-width: 0;
+  }
+
+  .url-bar:focus-within {
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 0 2px var(--color-cyan-dim);
+  }
+
+  .url-bar__icon {
+    padding: 0 10px;
+    color: var(--color-text-dim);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .url-bar__input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text);
+    font-size: 13px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    padding: 8px 0;
+    caret-color: var(--color-cyan);
+  }
+
+  .url-bar__input::placeholder {
+    color: var(--color-text-dim);
+  }
+
+  .url-bar__btn {
+    padding: 0 12px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition), color var(--transition);
+    flex-shrink: 0;
+  }
+
+  .url-bar__btn:hover {
+    background: var(--color-cyan-dim);
+    color: var(--color-cyan);
+  }
+
+  .device-switcher {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    flex-shrink: 0;
+  }
+
+  .device-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+    white-space: nowrap;
+  }
+
+  .device-btn:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .device-btn--active {
+    background: var(--color-cyan-dim);
+    color: var(--color-cyan);
+    box-shadow: inset 0 0 0 1px rgba(0, 209, 255, 0.2);
+  }
+
+  .device-btn--active:hover {
+    background: var(--color-cyan-dim);
+    color: var(--color-cyan);
+  }
+
+  @media (max-width: 768px) {
+    .navbar__title {
+      display: none;
+    }
+
+    .device-btn span {
+      display: none;
+    }
+
+    .device-btn {
+      padding: 6px 8px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .navbar {
+      gap: 8px;
+      padding: 0 10px;
+    }
+
+    .navbar__brand {
+      display: none;
+    }
+  }
+</style>
