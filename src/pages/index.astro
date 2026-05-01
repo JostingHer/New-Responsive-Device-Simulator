@@ -1,9 +1,9 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Toolbar from '../components/Toolbar.astro';
-import Viewer from '../components/Viewer.astro';
+import Layout from "../layouts/Layout.astro";
+import Toolbar from "../components/Toolbar.astro";
+import Viewer from "../components/Viewer.astro";
 
-const rawUrl = Astro.url.searchParams.get('url') ?? '';
+const rawUrl = Astro.url.searchParams.get("url") ?? "";
 const initialUrl = rawUrl.trim();
 ---
 
@@ -13,57 +13,87 @@ const initialUrl = rawUrl.trim();
 </Layout>
 
 <script>
-  type Device = 'mobile' | 'tablet' | 'desktop';
+  type Device = "mobile" | "tablet" | "desktop";
 
-  const DEVICES: Record<Device, { label: string; size: string; frameClass: string }> = {
-    mobile:  { label: 'Mobile',  size: '375 × 667',  frameClass: 'device-frame--mobile'  },
-    tablet:  { label: 'Tablet',  size: '768 × 1024', frameClass: 'device-frame--tablet'  },
-    desktop: { label: 'Desktop', size: 'Full width',  frameClass: 'device-frame--desktop' },
+  const DEVICES: Record<
+    Device,
+    { label: string; size: string; frameClass: string }
+  > = {
+    mobile: {
+      label: "Mobile",
+      size: "375 × 667",
+      frameClass: "device-frame--mobile",
+    },
+    tablet: {
+      label: "Tablet",
+      size: "768 × 1024",
+      frameClass: "device-frame--tablet",
+    },
+    desktop: {
+      label: "Desktop",
+      size: "Full width",
+      frameClass: "device-frame--desktop",
+    },
   };
 
-  const urlInput       = document.getElementById('url-input')       as HTMLInputElement;
-  const loadBtn        = document.getElementById('url-load-btn')    as HTMLButtonElement;
-  const deviceFrame    = document.getElementById('device-frame')    as HTMLDivElement;
-  const viewportLabel  = document.getElementById('viewport-label')  as HTMLSpanElement;
-  const viewportSize   = document.getElementById('viewport-size')   as HTMLSpanElement;
-  const deviceUrlBar   = document.getElementById('device-url-bar')  as HTMLDivElement;
-  const deviceBtns     = document.querySelectorAll<HTMLButtonElement>('.device-btn');
-  const loadingOverlay = document.getElementById('loading-overlay') as HTMLDivElement;
-  const errorState     = document.getElementById('error-state')     as HTMLDivElement;
+  const urlInput = document.getElementById("url-input") as HTMLInputElement;
+  const loadBtn = document.getElementById("url-load-btn") as HTMLButtonElement;
+  const deviceFrame = document.getElementById("device-frame") as HTMLDivElement;
+  const viewportLabel = document.getElementById(
+    "viewport-label",
+  ) as HTMLSpanElement;
+  const viewportSize = document.getElementById(
+    "viewport-size",
+  ) as HTMLSpanElement;
+  const deviceUrlBar = document.getElementById(
+    "device-url-bar",
+  ) as HTMLDivElement;
+  const deviceBtns =
+    document.querySelectorAll<HTMLButtonElement>(".device-btn");
+  const loadingOverlay = document.getElementById(
+    "loading-overlay",
+  ) as HTMLDivElement;
+  const errorState = document.getElementById("error-state") as HTMLDivElement;
 
-  let currentDevice: Device = 'desktop';
+  let currentDevice: Device = "desktop";
 
   function getPreviewFrame(): HTMLIFrameElement | null {
-    return document.getElementById('preview-frame') as HTMLIFrameElement | null;
+    return document.getElementById("preview-frame") as HTMLIFrameElement | null;
   }
 
   function setDevice(device: Device) {
     currentDevice = device;
-    deviceFrame.classList.remove('device-frame--mobile', 'device-frame--tablet', 'device-frame--desktop');
+    deviceFrame.classList.remove(
+      "device-frame--mobile",
+      "device-frame--tablet",
+      "device-frame--desktop",
+    );
     deviceFrame.classList.add(DEVICES[device].frameClass);
     viewportLabel.textContent = DEVICES[device].label;
-    viewportSize.textContent  = DEVICES[device].size;
-    deviceBtns.forEach(btn => {
-      btn.classList.toggle('device-btn--active', btn.dataset.device === device);
+    viewportSize.textContent = DEVICES[device].size;
+    deviceBtns.forEach((btn) => {
+      btn.classList.toggle("device-btn--active", btn.dataset.device === device);
     });
   }
 
   function normalizeUrl(raw: string): string {
     const trimmed = raw.trim();
-    if (!trimmed) return '';
+    if (!trimmed) return "";
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return 'https://' + trimmed;
+    return "https://" + trimmed;
   }
 
   function showEmptyState() {
-    const iframeWrapper = deviceFrame.querySelector('.iframe-wrapper') as HTMLDivElement;
-    const existing = document.getElementById('preview-frame');
+    const iframeWrapper = deviceFrame.querySelector(
+      ".iframe-wrapper",
+    ) as HTMLDivElement;
+    const existing = document.getElementById("preview-frame");
     if (existing) existing.remove();
-    let emptyState = document.getElementById('empty-state');
+    let emptyState = document.getElementById("empty-state");
     if (!emptyState) {
-      emptyState = document.createElement('div');
-      emptyState.id = 'empty-state';
-      emptyState.className = 'empty-state';
+      emptyState = document.createElement("div");
+      emptyState.id = "empty-state";
+      emptyState.className = "empty-state";
       emptyState.innerHTML = `
         <div class="empty-state__icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -79,48 +109,83 @@ const initialUrl = rawUrl.trim();
         </div>
       `;
       iframeWrapper.appendChild(emptyState);
-      attachExampleListeners(emptyState.querySelectorAll<HTMLButtonElement>('.example-url'));
+      attachExampleListeners(
+        emptyState.querySelectorAll<HTMLButtonElement>(".example-url"),
+      );
     }
-    errorState.style.display = 'none';
-    loadingOverlay.style.display = 'none';
-    window.history.replaceState({}, '', window.location.pathname);
+    errorState.style.display = "none";
+    loadingOverlay.style.display = "none";
+    window.history.replaceState({}, "", window.location.pathname);
   }
 
   function loadUrl(url: string) {
-    if (!url) { showEmptyState(); return; }
+    if (!url) {
+      showEmptyState();
+      return;
+    }
 
     deviceUrlBar.textContent = url;
-    errorState.style.display = 'none';
-    loadingOverlay.style.display = 'flex';
+    errorState.style.display = "none";
+    loadingOverlay.style.display = "flex";
 
-    const emptyState = document.getElementById('empty-state');
+    const emptyState = document.getElementById("empty-state");
     if (emptyState) emptyState.remove();
 
     let frame = getPreviewFrame();
     if (!frame) {
-      const iframeWrapper = deviceFrame.querySelector('.iframe-wrapper') as HTMLDivElement;
-      frame = document.createElement('iframe');
-      frame.id = 'preview-frame';
-      frame.className = 'preview-frame';
-      frame.title = 'Preview';
-      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+      const iframeWrapper = deviceFrame.querySelector(
+        ".iframe-wrapper",
+      ) as HTMLDivElement;
+      frame = document.createElement("iframe");
+      frame.id = "preview-frame";
+      frame.className = "preview-frame";
+      frame.title = "Preview";
+      frame.setAttribute(
+        "sandbox",
+        "allow-scripts allow-same-origin allow-forms allow-popups",
+      );
       iframeWrapper.insertBefore(frame, loadingOverlay);
     }
 
     const newSearch = new URLSearchParams({ url });
-    window.history.replaceState({}, '', `${window.location.pathname}?${newSearch.toString()}`);
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${newSearch.toString()}`,
+    );
 
     const loadTimeout = setTimeout(() => {
-      if (loadingOverlay.style.display !== 'none') {
-        loadingOverlay.style.display = 'none';
-        errorState.style.display = 'flex';
+      if (loadingOverlay.style.display !== "none") {
+        loadingOverlay.style.display = "none";
+        errorState.style.display = "flex";
       }
     }, 12000);
 
     frame.onload = () => {
       clearTimeout(loadTimeout);
-      loadingOverlay.style.display = 'none';
-      errorState.style.display = 'none';
+      loadingOverlay.style.display = "none";
+      errorState.style.display = "none";
+
+      function resizeViewer() {
+        const frame = getPreviewFrame();
+        if (!frame) return;
+
+        const navbarH =
+          (document.querySelector(".toolbar") as HTMLElement)?.offsetHeight ??
+          48;
+        const infoH =
+          (document.querySelector(".viewport-info") as HTMLElement)
+            ?.offsetHeight ?? 32;
+        const padding = 40;
+
+        const availableH = window.innerHeight - navbarH - infoH - padding;
+
+        deviceFrame.style.height = `${availableH}px`;
+        frame.style.width = "100%";
+        frame.style.height = "100%";
+      }
+
+      resizeViewer();
     };
 
     frame.src = url;
@@ -137,38 +202,49 @@ const initialUrl = rawUrl.trim();
   }
 
   function attachExampleListeners(btns: NodeListOf<HTMLButtonElement>) {
-    btns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const url = btn.dataset.url ?? '';
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const url = btn.dataset.url ?? "";
         urlInput.value = url;
         loadUrl(url);
       });
     });
   }
 
-  deviceBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+  deviceBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
       const device = btn.dataset.device as Device;
       if (device) setDevice(device);
     });
   });
 
-  urlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleUrlSubmit();
+  urlInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleUrlSubmit();
   });
 
-  loadBtn.addEventListener('click', handleUrlSubmit);
+  loadBtn.addEventListener("click", handleUrlSubmit);
 
   // Attach listeners to static SSR example buttons
-  const staticExamples = document.querySelectorAll<HTMLButtonElement>('#empty-state .example-url');
+  const staticExamples = document.querySelectorAll<HTMLButtonElement>(
+    "#empty-state .example-url",
+  );
   attachExampleListeners(staticExamples);
 
   // Detect initial device based on viewport
   function detectInitialDevice(): Device {
-    if (window.innerWidth <= 480) return 'mobile';
-    if (window.innerWidth <= 1024) return 'tablet';
-    return 'desktop';
+    if (window.innerWidth <= 480) return "mobile";
+    if (window.innerWidth <= 1024) return "tablet";
+    return "desktop";
   }
 
   setDevice(detectInitialDevice());
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialUrl = urlParams.get("url");
+  if (initialUrl) {
+    urlInput.value = initialUrl;
+    loadUrl(initialUrl);
+  } else {
+    showEmptyState();
+  }
 </script>
