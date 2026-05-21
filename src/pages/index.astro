@@ -38,6 +38,8 @@ const initialUrl = rawUrl.trim();
 
   const urlInput = document.getElementById("url-input") as HTMLInputElement;
   const loadBtn = document.getElementById("url-load-btn") as HTMLButtonElement;
+  const backBtn = document.getElementById("url-back-btn") as HTMLButtonElement;
+  const globeIcon = document.getElementById("url-globe-icon") as HTMLDivElement;
   const deviceFrame = document.getElementById("device-frame") as HTMLDivElement;
   const viewportLabel = document.getElementById(
     "viewport-label",
@@ -83,39 +85,101 @@ const initialUrl = rawUrl.trim();
     return "https://" + trimmed;
   }
 
+  const HISTORY_KEY = 'preview_history';
+
+  function getHistory(): string[] {
+    try {
+      const data = localStorage.getItem(HISTORY_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveToHistory(url: string) {
+    const history = getHistory();
+    const index = history.indexOf(url);
+    if (index !== -1) {
+      history.splice(index, 1);
+    }
+    history.unshift(url);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20))); // Keep last 20
+  }
+
+  function clearHistory() {
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const container = document.getElementById("history-container");
+    const grid = document.getElementById("history-grid");
+    const emptyExamples = document.getElementById("empty-examples");
+    
+    if (!container || !grid || !emptyExamples) return;
+
+    const history = getHistory();
+    if (history.length > 0) {
+      container.style.display = "flex";
+      emptyExamples.style.display = "none";
+      
+      grid.innerHTML = "";
+      history.forEach((url) => {
+        try {
+          const urlObj = new URL(url);
+          const domain = urlObj.hostname;
+          const card = document.createElement("button"); // Using button instead of div for a11y & styling matching
+          card.className = "history-card";
+          card.innerHTML = `
+            <div class="history-card__icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <span class="history-card__domain" title="${url}">${domain}</span>
+          `;
+          card.addEventListener("click", () => {
+            urlInput.value = url;
+            loadUrl(url);
+          });
+          grid.appendChild(card);
+        } catch (e) {
+          // ignore invalid urls
+        }
+      });
+      
+      const clearBtn = document.getElementById("clear-history-btn");
+      if (clearBtn) {
+        clearBtn.onclick = clearHistory;
+      }
+    } else {
+      container.style.display = "none";
+      emptyExamples.style.display = "flex";
+    }
+  }
+
   function showEmptyState() {
-    const iframeWrapper = deviceFrame.querySelector(
-      ".iframe-wrapper",
-    ) as HTMLDivElement;
+    if (backBtn && globeIcon) {
+      backBtn.style.display = "none";
+      globeIcon.style.display = "flex";
+    }
+
     const existing = document.getElementById("preview-frame");
     if (existing) existing.remove();
+    
     let emptyState = document.getElementById("empty-state");
-    if (!emptyState) {
-      emptyState = document.createElement("div");
-      emptyState.id = "empty-state";
-      emptyState.className = "empty-state";
-      emptyState.innerHTML = `
-        <div class="empty-state__icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </div>
-        <h2 class="empty-state__title">No URL to preview</h2>
-        <p class="empty-state__desc">Paste a URL in the address bar above and press Enter to begin.</p>
-        <div class="empty-state__examples">
-          <span class="empty-state__examples-label">Try an example:</span>
-          <button class="example-url" data-url="https://example.com">example.com</button>
-          <button class="example-url" data-url="https://wikipedia.org">wikipedia.org</button>
-        </div>
-      `;
-      iframeWrapper.appendChild(emptyState);
-      attachExampleListeners(
-        emptyState.querySelectorAll<HTMLButtonElement>(".example-url"),
-      );
+    if (emptyState) {
+      emptyState.style.display = "flex";
     }
+    
+    renderHistory();
+    
     errorState.style.display = "none";
     loadingOverlay.style.display = "none";
     window.history.replaceState({}, "", window.location.pathname);
+    urlInput.value = "";
   }
 
   function loadUrl(url: string) {
@@ -128,8 +192,15 @@ const initialUrl = rawUrl.trim();
     errorState.style.display = "none";
     loadingOverlay.style.display = "flex";
 
+    if (backBtn && globeIcon) {
+      backBtn.style.display = "flex";
+      globeIcon.style.display = "none";
+    }
+
+    saveToHistory(url);
+
     const emptyState = document.getElementById("empty-state");
-    if (emptyState) emptyState.remove();
+    if (emptyState) emptyState.style.display = "none";
 
     let frame = getPreviewFrame();
     if (!frame) {
@@ -223,6 +294,9 @@ const initialUrl = rawUrl.trim();
   });
 
   loadBtn.addEventListener("click", handleUrlSubmit);
+  if (backBtn) {
+    backBtn.addEventListener("click", showEmptyState);
+  }
 
   // Attach listeners to static SSR example buttons
   const staticExamples = document.querySelectorAll<HTMLButtonElement>(
@@ -238,6 +312,9 @@ const initialUrl = rawUrl.trim();
   }
 
   setDevice(detectInitialDevice());
+
+  // Render history on mount if we're in empty state (which we are currently assuming unless there's a url)
+  renderHistory();
 
   const urlParams = new URLSearchParams(window.location.search);
   const initialUrl = urlParams.get("url");

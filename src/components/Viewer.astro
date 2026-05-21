@@ -55,7 +55,16 @@ const hasUrl = url.trim().length > 0;
               <p class="empty-state__desc">
                 Paste a URL in the address bar above and press Enter to begin.
               </p>
-              <div class="empty-state__examples">
+              
+              <div id="history-container" class="history-section" style="display: none;">
+                <div class="history-section__header">
+                  <span class="history-section__title">Recent Previews</span>
+                  <button id="clear-history-btn" class="history-section__clear">Clear</button>
+                </div>
+                <div id="history-grid" class="history-grid"></div>
+              </div>
+
+              <div id="empty-examples" class="empty-state__examples">
                 <span class="empty-state__examples-label">Try an example:</span>
                 <button
                   class="example-url"
@@ -315,6 +324,93 @@ const hasUrl = url.trim().length > 0;
     border-color: var(--color-cyan);
   }
 
+  /* History Section */
+  .history-section {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .history-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+
+  .history-section__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .history-section__clear {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition), color var(--transition);
+  }
+
+  .history-section__clear:hover {
+    background: var(--color-surface-2);
+    color: #ff5f57;
+</style>
+<style is:global>
+  .history-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .history-card {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-cyan);
+    font-size: 13px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  }
+
+  .history-card:hover {
+    background: var(--color-cyan-dim);
+    border-color: var(--color-cyan);
+    transform: translateY(-1px);
+  }
+
+  .history-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-cyan);
+  }
+
+  .history-card__domain {
+    font-size: 13px;
+    color: var(--color-cyan);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+</style>
+<style>
   /* Loading Overlay */
   .loading-overlay {
     position: absolute;
